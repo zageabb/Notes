@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}All Notes{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('add_note') }}">Add Note</a></p>
+<div>
+    {% for note in notes %}
+    <div class="note-card">
+        <a href="{{ url_for('note_detail', note_id=note.id) }}">
+            {% if note.image %}
+            <img src="{{ url_for('static', filename='images/' + note.image) }}" alt="{{ note.title }}">
+            {% endif %}
+            <h3>{{ note.title }}</h3>
+            <p>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+        </a>
+    </div>
+    {% else %}
+    <p>No notes yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

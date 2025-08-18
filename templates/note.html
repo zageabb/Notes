@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ note.title }}{% endblock %}
+{% block footer %}
+<button form="note-form" type="submit">Save</button>
+{% endblock %}
+{% block content %}
+<form id="note-form" method="post" enctype="multipart/form-data" class="fullscreen-note">
+    <p><input type="text" name="title" value="{{ note.title }}" style="width:100%;font-size:1.2em;"></p>
+    {% if note.image %}
+    <p><img src="{{ url_for('static', filename='images/' + note.image) }}" alt="{{ note.title }}" style="max-width:100%;height:auto;"></p>
+    {% endif %}
+    <p><input type="file" name="image"></p>
+    <textarea name="content">{{ note.content }}</textarea>
+</form>
+{% endblock %}
