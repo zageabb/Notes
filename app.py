@@ -62,4 +62,4 @@ def note_detail(note_id):
     return render_template('note.html', note=note)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
