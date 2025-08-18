@@ -2,8 +2,8 @@
 {% block title %}Add Note{% endblock %}
 {% block content %}
 <form method="post" enctype="multipart/form-data">
-    <p><input type="text" name="title" placeholder="Title" required></p>
-    <p><textarea name="content" rows="10" placeholder="Content" required></textarea></p>
+    <p><input type="text" name="title" placeholder="Title" value="{{ title|default('') }}"></p>
+    <p><textarea name="content" rows="10" placeholder="Content">{{ content|default('') }}</textarea></p>
     <p><input type="file" name="image"></p>
     <p><button type="submit">Save</button></p>
 </form>
