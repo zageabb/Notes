@@ -8,6 +8,7 @@
 {% endblock %}
 {% block content %}
 <form id="note-form" method="post" enctype="multipart/form-data" class="fullscreen-note">
+    <br><br>
     <p><input type="text" name="title" value="{{ note.title }}" style="width:100%;font-size:1.2em;"></p>
     {% if note.image %}
     <p><img src="{{ url_for('static', filename='images/' + note.image) }}" alt="{{ note.title }}" style="max-width:100%;height:auto;"></p>
