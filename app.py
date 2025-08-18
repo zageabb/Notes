@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 import os
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
@@ -9,7 +10,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'images')
 app.secret_key = 'replace-with-secure-secret'
 
+
 db = SQLAlchemy(app)
+
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,19 +23,27 @@ class Note(db.Model):
     def __repr__(self):
         return f"<Note {self.title!r}>"
 
+
 with app.app_context():
     db.create_all()
+
 
 @app.route('/')
 def index():
     notes = Note.query.all()
     return render_template('index.html', notes=notes)
 
+
 @app.route('/add', methods=['GET', 'POST'])
 def add_note():
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        if not title or not content:
+            flash('Title and content are required.')
+            return render_template(
+                'add_note.html', title=title, content=content
+            )
         image_file = request.files.get('image')
         filename = None
         if image_file and image_file.filename:
@@ -44,6 +55,7 @@ def add_note():
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('add_note.html')
+
 
 @app.route('/note/<int:note_id>', methods=['GET', 'POST'])
 def note_detail(note_id):
@@ -61,6 +73,7 @@ def note_detail(note_id):
         return redirect(url_for('index'))
     return render_template('note.html', note=note)
 
+
 @app.route('/delete/<int:note_id>', methods=['POST'])
 def delete_note(note_id):
     note = Note.query.get_or_404(note_id)
@@ -71,6 +84,7 @@ def delete_note(note_id):
     db.session.delete(note)
     db.session.commit()
     return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5001, debug=True)
