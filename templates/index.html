@@ -5,6 +5,7 @@
 {% endblock %}
 {% block content %}
 <div>
+    <br><br>
     {% for note in notes %}
     <div class="note-card">
         <a href="{{ url_for('note_detail', note_id=note.id) }}">
