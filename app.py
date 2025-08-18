@@ -61,5 +61,16 @@ def note_detail(note_id):
         return redirect(url_for('index'))
     return render_template('note.html', note=note)
 
+@app.route('/delete/<int:note_id>', methods=['POST'])
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.image:
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], note.image)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+    db.session.delete(note)
+    db.session.commit()
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5001, debug=True)

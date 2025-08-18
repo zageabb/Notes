@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}{{ note.title }}{% endblock %}
 {% block footer %}
+<form method="post" action="{{ url_for('delete_note', note_id=note.id) }}" style="display:inline;" onsubmit="return confirm('Delete this note?');">
+    <button type="submit">Delete</button>
+</form>
 <button form="note-form" type="submit">Save</button>
 {% endblock %}
 {% block content %}
