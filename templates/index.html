@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}All Notes{% endblock %}
+{% block header_buttons %}
+    <button type="button" onclick="window.location.href='{{ url_for('add_note') }}'">Add Note</button>
+{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('add_note') }}">Add Note</a></p>
 <div>
     {% for note in notes %}
     <div class="note-card">
@@ -12,6 +14,9 @@
             <h3>{{ note.title }}</h3>
             <p>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
         </a>
+        <form method="post" action="{{ url_for('delete_note', note_id=note.id) }}" onsubmit="return confirm('Delete this note?');">
+            <button type="submit">Delete</button>
+        </form>
     </div>
     {% else %}
     <p>No notes yet.</p>
