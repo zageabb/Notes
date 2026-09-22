@@ -57,7 +57,17 @@ h2 { font-size: 16px; }
 .view-button, .notebook-button { padding: 8px 9px; text-align: left; }
 .view-button.active, .notebook-button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .section-heading { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin: 8px 2px; }
-.notebook-list { max-height: 160px; overflow: auto; display: grid; gap: 4px; margin-bottom: 10px; }
+.notebook-list {
+  flex: 0 0 clamp(220px, 34vh, 400px);
+  min-height: 220px;
+  max-height: 400px;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding-right: 2px;
+}
 .note-list { overflow: auto; min-height: 0; padding-right: 2px; }
 .note-list-item { width: 100%; border: 1px solid transparent; background: transparent; padding: 10px; border-radius: 9px; text-align: left; margin-bottom: 4px; }
 .note-list-item:hover { background: var(--panel-2); }
@@ -122,6 +132,7 @@ h2 { font-size: 16px; }
 }
 @media (max-width: 720px) {
   body { overflow: auto; }
+  .notebook-list { flex-basis: 200px; min-height: 180px; max-height: 220px; }
   .app-shell { display: block; height: auto; min-height: 100vh; }
   .sidebar { height: auto; max-height: 44vh; }
   .editor-pane { min-height: 56vh; }
