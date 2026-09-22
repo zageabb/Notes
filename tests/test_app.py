@@ -1,7 +1,9 @@
+import sqlite3
+
 import pytest
 
 from notes_app import create_app
-from notes_app.models import Notebook
+from notes_app.models import Note, Notebook
 
 
 @pytest.fixture()
@@ -75,3 +77,39 @@ def test_markdown_render_is_sanitised(client):
 def test_default_inbox_exists(app):
     with app.app_context():
         assert Notebook.query.filter_by(name="Inbox").first() is not None
+
+
+def test_v1_database_is_migrated_without_losing_notes(tmp_path):
+    db_path = tmp_path / "legacy-notes.db"
+    connection = sqlite3.connect(db_path)
+    connection.execute(
+        "CREATE TABLE note ("
+        "id INTEGER PRIMARY KEY, "
+        "title VARCHAR(100) NOT NULL, "
+        "content TEXT NOT NULL, "
+        "image VARCHAR(200)"
+        ")"
+    )
+    connection.execute(
+        "INSERT INTO note (id, title, content, image) VALUES (?, ?, ?, ?)",
+        (1, "Legacy note", "Original content", "old-image.png"),
+    )
+    connection.commit()
+    connection.close()
+
+    migrated = create_app({
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
+        "UPLOAD_FOLDER": str(tmp_path / "migrated-uploads"),
+    })
+
+    with migrated.app_context():
+        note = Note.query.get(1)
+        assert note is not None
+        assert note.title == "Legacy note"
+        assert note.content == "Original content"
+        assert note.image == "old-image.png"
+        assert note.notebook is not None
+        assert note.notebook.name == "Inbox"
+        assert note.created_at is not None
+        assert note.updated_at is not None
