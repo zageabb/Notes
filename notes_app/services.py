@@ -361,14 +361,22 @@ def load_ai_settings() -> dict:
     return defaults
 
 
-def save_ai_settings(settings: dict) -> dict:
-    current = load_ai_settings()
-    url = str(settings.get("ollama_url", current["ollama_url"])).strip().rstrip("/")
+def _normalise_ollama_url(value: str) -> str:
+    url = str(value or "").strip().rstrip("/")
     if not url.startswith(("http://", "https://")):
         raise ValueError("Ollama URL must start with http:// or https://")
+    return url
+
+
+def save_ai_settings(settings: dict) -> dict:
+    current = load_ai_settings()
+    url = _normalise_ollama_url(settings.get("ollama_url", current["ollama_url"]))
+    model = str(settings.get("model", current["model"])).strip()
+    if not model:
+        raise ValueError("Choose an Ollama model.")
     current.update({
         "ollama_url": url,
-        "model": str(settings.get("model", current["model"])).strip(),
+        "model": model,
         "embedding_model": str(settings.get("embedding_model", current["embedding_model"])).strip(),
         "timeout_seconds": max(5, min(600, int(settings.get("timeout_seconds", current["timeout_seconds"])))),
     })
@@ -376,15 +384,33 @@ def save_ai_settings(settings: dict) -> dict:
     return current
 
 
-def ollama_models() -> list[str]:
+def ollama_models(ollama_url: str | None = None) -> list[str]:
     settings = load_ai_settings()
-    response = requests.get(f"{settings['ollama_url']}/api/tags", timeout=10)
+    url = _normalise_ollama_url(ollama_url or settings["ollama_url"])
+    response = requests.get(f"{url}/api/tags", timeout=10)
     response.raise_for_status()
     return [item.get("name") for item in response.json().get("models", []) if item.get("name")]
 
 
-def ollama_generate(prompt: str, system: str = "") -> str:
+def ollama_generate(
+    prompt: str,
+    system: str = "",
+    settings_override: dict | None = None,
+) -> str:
     settings = load_ai_settings()
+    if settings_override:
+        if "ollama_url" in settings_override:
+            settings["ollama_url"] = _normalise_ollama_url(settings_override["ollama_url"])
+        if "model" in settings_override:
+            model = str(settings_override["model"] or "").strip()
+            if not model:
+                raise ValueError("Choose an Ollama model.")
+            settings["model"] = model
+        if "timeout_seconds" in settings_override:
+            settings["timeout_seconds"] = max(
+                5,
+                min(600, int(settings_override["timeout_seconds"])),
+            )
     payload = {
         "model": settings["model"],
         "prompt": prompt,
