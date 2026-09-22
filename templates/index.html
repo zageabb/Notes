@@ -140,7 +140,14 @@
     <section class="modal-card">
         <div class="modal-header"><h2>Settings</h2><button class="icon-btn modal-close">✕</button></div>
         <div class="form-grid">
-            <label>Ollama server<input id="ollamaUrlInput" type="url"></label>
+            <label>Server
+                <select id="ollamaServerPreset">
+                    <option value="http://192.168.1.249:11434">Ubuntu server</option>
+                    <option value="http://127.0.0.1:11434">Local to Notes host</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </label>
+            <label>Ollama URL<input id="ollamaUrlInput" type="url" placeholder="http://server:11434"></label>
             <label>Model<select id="ollamaModelSelect"></select></label>
             <label>Embedding model<input id="embeddingModelInput" type="text"></label>
             <label>Timeout (seconds)<input id="aiTimeoutInput" type="number" min="5" max="600"></label>
