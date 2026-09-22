@@ -1,26 +1,168 @@
 {% extends 'base.html' %}
-{% block title %}All Notes{% endblock %}
-{% block header_buttons %}
-    <button type="button" onclick="window.location.href='{{ url_for('add_note') }}'">Add Note</button>
-{% endblock %}
+{% block title %}Notes v{{ version }}{% endblock %}
 {% block content %}
-<div>
-    <br><br>
-    {% for note in notes %}
-    <div class="note-card">
-        <a href="{{ url_for('note_detail', note_id=note.id) }}">
-            {% if note.image %}
-            <img src="{{ url_for('static', filename='images/' + note.image) }}" alt="{{ note.title }}">
-            {% endif %}
-            <h3>{{ note.title }}</h3>
-            <p>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
-        </a>
-        <form method="post" action="{{ url_for('delete_note', note_id=note.id) }}" onsubmit="return confirm('Delete this note?');">
-            <button type="submit">Delete</button>
+<div class="app-shell" id="appShell" data-selected-id="{{ selected.id if selected else '' }}">
+    <aside class="sidebar pane">
+        <div class="brand-row">
+            <div>
+                <h1>Notes</h1>
+                <span class="version">v{{ version }}</span>
+            </div>
+            <div class="brand-actions">
+                <button class="icon-btn" id="themeToggle" title="Toggle theme">◐</button>
+                <button class="icon-btn" id="settingsButton" title="Settings">⚙</button>
+            </div>
+        </div>
+
+        <button class="primary wide" id="newNoteButton">＋ Quick Note</button>
+        <div class="search-box">
+            <input id="searchInput" type="search" placeholder="Search notes…" autocomplete="off">
+            <kbd>⌘K</kbd>
+        </div>
+
+        <nav class="view-nav" aria-label="Views">
+            <button data-view="all" class="view-button active">All notes</button>
+            <button data-view="pinned" class="view-button">Pinned</button>
+            <button data-view="favourites" class="view-button">Favourites</button>
+            <button data-view="archive" class="view-button">Archive</button>
+            <button data-view="trash" class="view-button">Trash</button>
+        </nav>
+
+        <div class="section-heading">
+            <span>Notebooks</span>
+            <button id="addNotebookButton" class="tiny-btn" title="New notebook">＋</button>
+        </div>
+        <div id="notebookList" class="notebook-list">
+            <button class="notebook-button active" data-notebook="">All notebooks</button>
+            {% for notebook in notebooks %}
+            <button class="notebook-button" data-notebook="{{ notebook.id }}">{{ notebook.name }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="section-heading"><span>Notes</span><span id="noteCount">{{ notes|length }}</span></div>
+        <div class="note-list" id="noteList">
+            {% for note in notes %}
+            <button class="note-list-item {% if selected and note.id == selected.id %}selected{% endif %}" data-note-id="{{ note.id }}">
+                <div class="note-list-title">{% if note.pinned %}📌 {% endif %}{{ note.title }}</div>
+                <div class="note-list-meta">{{ note.notebook.name if note.notebook else 'Inbox' }} · {{ note.updated_at.strftime('%d %b %H:%M') if note.updated_at else '' }}</div>
+                <div class="note-list-preview">{{ note.content[:120] | replace('\n', ' ') }}</div>
+            </button>
+            {% else %}
+            <div class="empty-state">No notes yet.</div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <div class="resizer resizer-left" id="leftResizer" title="Resize notes pane"></div>
+
+    <main class="editor-pane pane">
+        <div class="editor-toolbar">
+            <div class="save-state" id="saveState">Ready</div>
+            <div class="toolbar-actions">
+                <button class="toolbar-btn" id="pinButton" title="Pin note">📌</button>
+                <button class="toolbar-btn" id="favouriteButton" title="Favourite">☆</button>
+                <button class="toolbar-btn" id="previewButton">Preview</button>
+                <button class="toolbar-btn" id="attachButton">Attach</button>
+                <button class="toolbar-btn" id="historyButton">History</button>
+                <button class="toolbar-btn" id="exportButton">Export</button>
+                <button class="toolbar-btn" id="archiveButton">Archive</button>
+                <button class="toolbar-btn danger-text" id="trashButton">Trash</button>
+            </div>
+        </div>
+
+        <div class="editor-empty" id="editorEmpty" {% if selected %}hidden{% endif %}>
+            <h2>No note selected</h2>
+            <p>Create a quick note or choose one from the list.</p>
+        </div>
+
+        <div class="editor-content" id="editorContent" {% if not selected %}hidden{% endif %}>
+            <input id="titleInput" class="title-input" type="text" placeholder="Untitled">
+            <div class="note-meta-row">
+                <select id="notebookSelect" aria-label="Notebook">
+                    {% for notebook in notebooks %}
+                    <option value="{{ notebook.id }}">{{ notebook.name }}</option>
+                    {% endfor %}
+                </select>
+                <input id="tagsInput" type="text" placeholder="Tags: sap, vim, project">
+                <input id="sourceUrlInput" type="url" placeholder="Source URL (optional)">
+            </div>
+
+            <div id="attachmentList" class="attachment-list"></div>
+            <input type="file" id="attachmentInput" hidden>
+
+            <div class="editor-surface">
+                <textarea id="contentInput" spellcheck="true" placeholder="Start writing Markdown…"></textarea>
+                <article id="previewPane" class="markdown-preview" hidden></article>
+            </div>
+        </div>
+    </main>
+
+    <div class="resizer resizer-right" id="rightResizer" title="Resize assistant pane"></div>
+
+    <aside class="assistant-pane pane">
+        <div class="assistant-header">
+            <div>
+                <h2>AI Assistant</h2>
+                <span id="aiModelLabel" class="muted">Local Ollama</span>
+            </div>
+            <select id="aiScope" title="Assistant scope">
+                <option value="current">Current note</option>
+                <option value="all">All notes</option>
+            </select>
+        </div>
+
+        <div class="skills" id="skillsList">
+            {% for key, skill in skills.items() %}
+            <button class="skill-button" data-skill="{{ key }}">{{ skill.label }}</button>
+            {% endfor %}
+        </div>
+
+        <div class="proposal-card" id="proposalCard" hidden>
+            <div class="proposal-title">AI proposal</div>
+            <pre id="proposalText"></pre>
+            <div class="proposal-actions">
+                <button class="primary" id="applyProposalButton">Apply</button>
+                <button id="rejectProposalButton">Reject</button>
+            </div>
+        </div>
+
+        <div class="chat-log" id="chatLog">
+            <div class="chat-message assistant">Ask about the selected note, attachments, or switch scope to <strong>All notes</strong>.</div>
+        </div>
+        <form id="chatForm" class="chat-form">
+            <textarea id="chatInput" rows="3" placeholder="Ask Notes…"></textarea>
+            <button class="primary" type="submit">Send</button>
         </form>
-    </div>
-    {% else %}
-    <p>No notes yet.</p>
-    {% endfor %}
+    </aside>
+</div>
+
+<div class="modal-backdrop" id="settingsModal" hidden>
+    <section class="modal-card">
+        <div class="modal-header"><h2>Settings</h2><button class="icon-btn modal-close">✕</button></div>
+        <div class="form-grid">
+            <label>Ollama server<input id="ollamaUrlInput" type="url"></label>
+            <label>Model<select id="ollamaModelSelect"></select></label>
+            <label>Embedding model<input id="embeddingModelInput" type="text"></label>
+            <label>Timeout (seconds)<input id="aiTimeoutInput" type="number" min="5" max="600"></label>
+        </div>
+        <div class="modal-actions">
+            <span id="aiSettingsStatus" class="muted"></span>
+            <button id="refreshModelsButton">Refresh models</button>
+            <button id="testAiButton">Test AI</button>
+            <button class="primary" id="saveSettingsButton">Save</button>
+        </div>
+        <hr>
+        <div class="settings-links">
+            <a href="{{ url_for('notes.export_backup') }}">Download complete backup ZIP</a>
+            <span>Markdown preview works without AI. Mermaid rendering uses the browser Mermaid library when available.</span>
+        </div>
+    </section>
+</div>
+
+<div class="modal-backdrop" id="historyModal" hidden>
+    <section class="modal-card large">
+        <div class="modal-header"><h2>Revision history</h2><button class="icon-btn modal-close">✕</button></div>
+        <div id="historyList" class="history-list"></div>
+    </section>
 </div>
 {% endblock %}
