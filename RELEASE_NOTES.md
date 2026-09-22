@@ -1,5 +1,15 @@
 # Release Notes
 
+## v2.0.1 — 22 September 2026
+
+### Changed
+
+- AI Settings now provides explicit Ubuntu, Notes-host and Custom Ollama server choices.
+- changing the server reloads the model list from that selected endpoint immediately.
+- **Refresh models** uses the URL currently shown in Settings, even before saving.
+- **Test AI** uses the currently selected server, model and timeout before saving.
+- the AI pane header shows both the active model and Ollama server.
+
 ## v2.0.0 — 22 September 2026
 
 Major rebuild of the original Notes Storage application.
