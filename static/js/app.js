@@ -186,12 +186,33 @@
     addChat('assistant', 'Proposal applied to the note and queued for autosave.');
   };
 
-  const loadModels = async (selected='') => {
+  const serverLabel = (url='') => {
+    const clean = url.replace(/\/$/, '');
+    if (clean === 'http://192.168.1.249:11434') return 'Ubuntu server';
+    if (clean === 'http://127.0.0.1:11434') return 'Notes host';
+    try { return new URL(clean).host || clean; } catch (_) { return clean || 'Ollama'; }
+  };
+
+  const updateAiModelLabel = (settings) => {
+    const model = settings.model || 'No model';
+    qs('#aiModelLabel').textContent = `${model} · ${serverLabel(settings.ollama_url)}`;
+    qs('#aiModelLabel').title = settings.ollama_url || '';
+  };
+
+  const syncServerPreset = (url='') => {
+    const preset = qs('#ollamaServerPreset');
+    const clean = url.trim().replace(/\/$/, '');
+    const known = [...preset.options].find(opt => opt.value !== 'custom' && opt.value === clean);
+    preset.value = known ? known.value : 'custom';
+  };
+
+  const loadModels = async (selected='', url=qs('#ollamaUrlInput').value.trim()) => {
     const select = qs('#ollamaModelSelect');
-    select.innerHTML = selected ? `<option>${escapeHtml(selected)}</option>` : '';
-    qs('#aiSettingsStatus').textContent = 'Loading models…';
+    select.disabled = true;
+    select.innerHTML = selected ? `<option value="${escapeHtml(selected)}">${escapeHtml(selected)}</option>` : '';
+    qs('#aiSettingsStatus').textContent = `Loading models from ${serverLabel(url)}…`;
     try {
-      const data = await api('/api/ai/models');
+      const data = await api(`/api/ai/models?url=${encodeURIComponent(url)}`);
       const models = data.models || [];
       select.innerHTML = '';
       for (const model of models) {
@@ -200,16 +221,19 @@
         opt.textContent = model;
         select.appendChild(opt);
       }
-      if (selected && !models.includes(selected)) {
+      if (!models.length && selected) {
         const opt = document.createElement('option');
         opt.value = selected;
         opt.textContent = selected;
         select.appendChild(opt);
       }
-      select.value = selected || models[0] || '';
-      qs('#aiSettingsStatus').textContent = `${models.length} model(s)`;
+      select.value = models.includes(selected) ? selected : (models[0] || selected || '');
+      qs('#aiSettingsStatus').textContent = `${models.length} model(s) on ${serverLabel(url)}`;
     } catch (err) {
+      select.innerHTML = selected ? `<option value="${escapeHtml(selected)}">${escapeHtml(selected)}</option>` : '';
       qs('#aiSettingsStatus').textContent = err.message;
+    } finally {
+      select.disabled = false;
     }
   };
 
@@ -217,9 +241,10 @@
     qs('#settingsModal').hidden = false;
     const settings = await api('/api/ai/settings');
     qs('#ollamaUrlInput').value = settings.ollama_url;
+    syncServerPreset(settings.ollama_url);
     qs('#embeddingModelInput').value = settings.embedding_model;
     qs('#aiTimeoutInput').value = settings.timeout_seconds;
-    await loadModels(settings.model);
+    await loadModels(settings.model, settings.ollama_url);
   };
 
   const openHistory = async () => {
@@ -413,7 +438,24 @@
   qs('#historyButton').addEventListener('click', openHistory);
   qs('#exportButton').addEventListener('click', () => state.noteId && (window.location.href=`/export/note/${state.noteId}.md`));
   qs('#settingsButton').addEventListener('click', openSettings);
-  qs('#refreshModelsButton').addEventListener('click', () => loadModels(qs('#ollamaModelSelect').value));
+  qs('#ollamaServerPreset').addEventListener('change', async () => {
+    const preset = qs('#ollamaServerPreset').value;
+    if (preset === 'custom') {
+      qs('#ollamaUrlInput').focus();
+      qs('#ollamaUrlInput').select();
+      return;
+    }
+    qs('#ollamaUrlInput').value = preset;
+    await loadModels('', preset);
+  });
+  qs('#ollamaUrlInput').addEventListener('change', async () => {
+    const url = qs('#ollamaUrlInput').value.trim();
+    syncServerPreset(url);
+    await loadModels('', url);
+  });
+  qs('#refreshModelsButton').addEventListener('click', () =>
+    loadModels(qs('#ollamaModelSelect').value, qs('#ollamaUrlInput').value.trim())
+  );
 
   qs('#saveSettingsButton').addEventListener('click', async () => {
     try {
@@ -426,8 +468,8 @@
           timeout_seconds: Number(qs('#aiTimeoutInput').value),
         }),
       });
-      qs('#aiSettingsStatus').textContent = 'Saved';
-      qs('#aiModelLabel').textContent = data.model;
+      qs('#aiSettingsStatus').textContent = `Saved — ${data.model} on ${serverLabel(data.ollama_url)}`;
+      updateAiModelLabel(data);
     } catch (err) {
       qs('#aiSettingsStatus').textContent = err.message;
     }
@@ -436,8 +478,16 @@
   qs('#testAiButton').addEventListener('click', async () => {
     qs('#aiSettingsStatus').textContent = 'Testing…';
     try {
-      const data = await api('/api/ai/test', {method:'POST'});
-      qs('#aiSettingsStatus').textContent = data.response || 'Ready';
+      const data = await api('/api/ai/test', {
+        method:'POST',
+        body: JSON.stringify({
+          ollama_url: qs('#ollamaUrlInput').value.trim(),
+          model: qs('#ollamaModelSelect').value,
+          timeout_seconds: Number(qs('#aiTimeoutInput').value),
+        }),
+      });
+      qs('#aiSettingsStatus').textContent =
+        `${data.response || 'Ready'} — ${data.model} on ${serverLabel(data.ollama_url)}`;
     } catch (err) {
       qs('#aiSettingsStatus').textContent = err.message;
     }
@@ -503,6 +553,6 @@
 
   if (state.noteId) selectNote(state.noteId);
   api('/api/ai/settings')
-    .then(settings => { qs('#aiModelLabel').textContent = settings.model || 'Local Ollama'; })
+    .then(updateAiModelLabel)
     .catch(() => {});
 })();
