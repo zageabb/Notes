@@ -1,35 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <title>{% block title %}Notes{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<header>
-    <div class="container">
-        <h1 style="display:inline-block"><a href="{{ url_for('index') }}" style="color:white;text-decoration:none;">Notes</a></h1>
-        <br>
-        {% block header_buttons %}{% endblock %}
-    </div>
-</header>
-<div class="container">
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul class="flash">
-        {% for message in messages %}
-            <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-    {% endwith %}
     {% block content %}{% endblock %}
-</div>
-<footer>
-    <div class="container">
-        {% block footer %}{% endblock %}
-    </div>
-</footer>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+      if (window.mermaid) window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
