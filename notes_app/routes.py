@@ -286,16 +286,38 @@ def ai_settings_save():
 @bp.get("/api/ai/models")
 def ai_models():
     try:
-        return jsonify({"models": ollama_models()})
+        return jsonify({
+            "models": ollama_models(request.args.get("url")),
+            "ollama_url": request.args.get("url") or load_ai_settings()["ollama_url"],
+        })
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": f"Ollama model discovery failed: {exc}"}), 502
 
 
 @bp.post("/api/ai/test")
 def ai_test():
+    data = request.get_json(silent=True) or {}
+    override = {
+        key: data[key]
+        for key in ("ollama_url", "model", "timeout_seconds")
+        if key in data
+    }
     try:
-        response = ollama_generate("Reply with exactly: Notes AI ready")
-        return jsonify({"ok": True, "response": response})
+        response = ollama_generate(
+            "Reply with exactly: Notes AI ready",
+            settings_override=override or None,
+        )
+        active = load_ai_settings()
+        return jsonify({
+            "ok": True,
+            "response": response,
+            "ollama_url": override.get("ollama_url", active["ollama_url"]),
+            "model": override.get("model", active["model"]),
+        })
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 502
 
