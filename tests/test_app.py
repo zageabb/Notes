@@ -24,7 +24,7 @@ def client(app):
 def test_health(client):
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.get_json()["version"] == "2.0.0"
+    assert response.get_json()["version"] == "2.0.1"
 
 
 def test_create_update_search_and_restore(client):
@@ -113,3 +113,52 @@ def test_v1_database_is_migrated_without_losing_notes(tmp_path):
         assert note.notebook.name == "Inbox"
         assert note.created_at is not None
         assert note.updated_at is not None
+
+
+def test_ai_server_and_model_can_be_tested_before_saving(client, monkeypatch):
+    calls = {}
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self.payload
+
+    def fake_get(url, timeout):
+        calls["models_url"] = url
+        calls["models_timeout"] = timeout
+        return FakeResponse({"models": [{"name": "qwen2.5-coder:7b"}]})
+
+    def fake_post(url, json, timeout):
+        calls["generate_url"] = url
+        calls["generate_payload"] = json
+        calls["generate_timeout"] = timeout
+        return FakeResponse({"response": "Notes AI ready"})
+
+    monkeypatch.setattr("notes_app.services.requests.get", fake_get)
+    monkeypatch.setattr("notes_app.services.requests.post", fake_post)
+
+    server = "http://10.0.0.8:11434"
+    models = client.get(f"/api/ai/models?url={server}")
+    assert models.status_code == 200
+    assert models.get_json()["models"] == ["qwen2.5-coder:7b"]
+    assert calls["models_url"] == f"{server}/api/tags"
+
+    tested = client.post(
+        "/api/ai/test",
+        json={
+            "ollama_url": server,
+            "model": "qwen2.5-coder:7b",
+            "timeout_seconds": 45,
+        },
+    )
+    assert tested.status_code == 200
+    assert tested.get_json()["model"] == "qwen2.5-coder:7b"
+    assert tested.get_json()["ollama_url"] == server
+    assert calls["generate_url"] == f"{server}/api/generate"
+    assert calls["generate_payload"]["model"] == "qwen2.5-coder:7b"
+    assert calls["generate_timeout"] == 45
