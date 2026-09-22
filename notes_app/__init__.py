@@ -27,7 +27,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         UPLOAD_FOLDER=os.getenv("NOTES_UPLOAD_FOLDER", str(Path(app.instance_path) / "uploads")),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
-        NOTES_VERSION="2.0.0",
+        NOTES_VERSION="2.0.1",
     )
     if test_config:
         app.config.update(test_config)
