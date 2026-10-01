@@ -243,6 +243,73 @@ def search_notes(query: str = "", notebook_id: int | None = None, view: str = "a
     return notes[:limit]
 
 
+AI_QUERY_STOPWORDS = {
+    "a", "about", "all", "am", "an", "and", "any", "are", "as", "at", "be",
+    "been", "can", "could", "did", "do", "does", "everything", "find", "for",
+    "from", "give", "have", "has", "i", "in", "is", "it", "me", "my", "notes",
+    "of", "on", "or", "please", "show", "tell", "that", "the", "them", "there",
+    "these", "this", "to", "was", "what", "when", "where", "which", "who", "why",
+    "with", "write", "written", "wrote", "you", "your",
+}
+
+
+def _ai_query_terms(question: str) -> list[str]:
+    """Extract useful retrieval terms from a conversational AI question."""
+    terms: list[str] = []
+    seen: set[str] = set()
+    for raw in re.findall(r"[\w-]+", question or "", flags=re.UNICODE):
+        term = raw.strip().lower()
+        if len(term) < 2 or term in AI_QUERY_STOPWORDS or term in seen:
+            continue
+        seen.add(term)
+        terms.append(term)
+    return terms[:12]
+
+
+def search_notes_for_ai(question: str, limit: int = 12) -> list[Note]:
+    """Retrieve notes for conversational all-notes chat.
+
+    Normal UI search intentionally keeps its stricter semantics. AI retrieval is
+    broader: conversational filler is removed and notes matching any meaningful
+    term are ranked by how many terms appear across title/content/tags/attachments.
+    """
+    terms = _ai_query_terms(question)
+    if not terms:
+        return search_notes(limit=limit)
+
+    candidates: dict[int, Note] = {}
+    for term in terms:
+        for note in search_notes(term, limit=max(limit * 3, 24)):
+            candidates[note.id] = note
+
+    if not candidates:
+        return []
+
+    def score(note: Note) -> tuple[int, datetime]:
+        title = (note.title or "").lower()
+        content = (note.content or "").lower()
+        tags = " ".join(tag.name for tag in note.tags).lower()
+        attachments = " ".join(a.extracted_text or "" for a in note.attachments).lower()
+        points = 0
+        for term in terms:
+            if term in title:
+                points += 8
+            if term in tags:
+                points += 6
+            if term in content:
+                points += 3
+            if term in attachments:
+                points += 2
+        return points, note.updated_at or note.created_at or datetime.min
+
+    ranked = sorted(
+        (note for note in candidates.values() if score(note)[0] > 0),
+        key=score,
+        reverse=True,
+    )
+    return ranked[:limit]
+
+
 def render_markdown(source: str) -> str:
     html = markdown.markdown(
         source or "",
@@ -435,7 +502,7 @@ def context_for_ai(note: Note | None, question: str = "", scope: str = "current"
             if attachment.extracted_text.strip():
                 chunks.append(f"### Attachment: {attachment.original_name}\n{attachment.extracted_text[:5000]}")
     if scope == "all":
-        matches = search_notes(question, limit=12) if question.strip() else search_notes(limit=12)
+        matches = search_notes_for_ai(question, limit=12) if question.strip() else search_notes(limit=12)
         for other in matches:
             if note and other.id == note.id:
                 continue
