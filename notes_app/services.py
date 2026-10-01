@@ -257,7 +257,7 @@ def _ai_query_terms(question: str) -> list[str]:
     """Extract useful retrieval terms from a conversational AI question."""
     terms: list[str] = []
     seen: set[str] = set()
-    for raw in re.findall(r"[\\w-]+", question or "", flags=re.UNICODE):
+    for raw in re.findall(r"[\w-]+", question or "", flags=re.UNICODE):
         term = raw.strip().lower()
         if len(term) < 2 or term in AI_QUERY_STOPWORDS or term in seen:
             continue
@@ -302,7 +302,11 @@ def search_notes_for_ai(question: str, limit: int = 12) -> list[Note]:
                 points += 2
         return points, note.updated_at or note.created_at or datetime.min
 
-    ranked = sorted(candidates.values(), key=score, reverse=True)
+    ranked = sorted(
+        (note for note in candidates.values() if score(note)[0] > 0),
+        key=score,
+        reverse=True,
+    )
     return ranked[:limit]
 
 
