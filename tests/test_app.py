@@ -162,3 +162,54 @@ def test_ai_server_and_model_can_be_tested_before_saving(client, monkeypatch):
     assert calls["generate_url"] == f"{server}/api/generate"
     assert calls["generate_payload"]["model"] == "qwen2.5-coder:7b"
     assert calls["generate_timeout"] == 45
+
+
+def test_all_notes_ai_search_handles_conversational_question(app):
+    from notes_app.services import context_for_ai, search_notes_for_ai
+
+    with app.app_context():
+        inbox = Notebook.query.filter_by(name="Inbox").first()
+        sap = Note(
+            title="SAP VIM payment terms",
+            content="Notes about invoice workflow, GRN matching and supplier payment terms.",
+            notebook_id=inbox.id,
+        )
+        unrelated = Note(
+            title="Camper electrics",
+            content="Solar panel and MPPT wiring notes.",
+            notebook_id=inbox.id,
+        )
+        db = __import__("notes_app.models", fromlist=["db"]).db
+        db.session.add_all([sap, unrelated])
+        db.session.commit()
+
+        matches = search_notes_for_ai("What have I written about SAP VIM?", limit=12)
+        assert sap.id in [note.id for note in matches]
+        assert unrelated.id not in [note.id for note in matches]
+
+        context = context_for_ai(None, "What have I written about SAP VIM?", "all")
+        assert "SAP VIM payment terms" in context
+        assert "invoice workflow" in context
+
+
+def test_all_notes_ai_search_can_match_attachment_text(app):
+    from notes_app.models import Attachment, db
+    from notes_app.services import search_notes_for_ai
+
+    with app.app_context():
+        inbox = Notebook.query.filter_by(name="Inbox").first()
+        note = Note(title="Supplier meeting", content="General meeting notes", notebook_id=inbox.id)
+        db.session.add(note)
+        db.session.flush()
+        db.session.add(Attachment(
+            note_id=note.id,
+            original_name="vim.txt",
+            stored_name="test-vim.txt",
+            mime_type="text/plain",
+            size_bytes=20,
+            extracted_text="OpenText VIM invoice exception workflow",
+        ))
+        db.session.commit()
+
+        matches = search_notes_for_ai("find my OpenText VIM information", limit=12)
+        assert note.id in [row.id for row in matches]
