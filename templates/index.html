@@ -35,7 +35,12 @@
         <div id="notebookList" class="notebook-list">
             <button class="notebook-button active" data-notebook="">All notebooks</button>
             {% for notebook in notebooks %}
-            <button class="notebook-button" data-notebook="{{ notebook.id }}">{{ notebook.name }}</button>
+            <div class="notebook-row" data-notebook-row="{{ notebook.id }}">
+                <button class="notebook-button" data-notebook="{{ notebook.id }}">{{ notebook.name }}</button>
+                {% if notebook.name|lower != 'inbox' %}
+                <button class="notebook-delete-button" data-delete-notebook="{{ notebook.id }}" data-notebook-name="{{ notebook.name }}" title="Delete notebook" aria-label="Delete {{ notebook.name }}">×</button>
+                {% endif %}
+            </div>
             {% endfor %}
         </div>
 
@@ -67,6 +72,7 @@
                 <button class="toolbar-btn" id="exportButton">Export</button>
                 <button class="toolbar-btn" id="archiveButton">Archive</button>
                 <button class="toolbar-btn danger-text" id="trashButton">Trash</button>
+                <button class="toolbar-btn danger-text" id="deleteNoteButton" hidden>Delete permanently</button>
             </div>
         </div>
 
