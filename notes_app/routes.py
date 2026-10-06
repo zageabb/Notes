@@ -164,6 +164,33 @@ def search():
     return jsonify([note_to_dict(note, include_content=False) for note in notes])
 
 
+@bp.delete("/api/notebooks/<int:notebook_id>")
+def delete_notebook(notebook_id: int):
+    notebook = db.session.get(Notebook, notebook_id)
+    if not notebook:
+        abort(404)
+    if notebook.name.lower() == "inbox":
+        return jsonify({"error": "Inbox cannot be deleted."}), 409
+
+    inbox = Notebook.query.filter(db.func.lower(Notebook.name) == "inbox").first()
+    if not inbox:
+        inbox = Notebook(name="Inbox")
+        db.session.add(inbox)
+        db.session.flush()
+
+    moved_notes = Note.query.filter_by(notebook_id=notebook.id).update(
+        {"notebook_id": inbox.id, "updated_at": datetime.utcnow()},
+        synchronize_session=False,
+    )
+    db.session.delete(notebook)
+    db.session.commit()
+    return jsonify({
+        "ok": True,
+        "moved_notes": moved_notes,
+        "inbox": {"id": inbox.id, "name": inbox.name},
+    })
+
+
 @bp.post("/api/notebooks")
 def create_notebook():
     data = request.get_json(silent=True) or {}
