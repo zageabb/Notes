@@ -60,6 +60,47 @@ def test_create_update_search_and_restore(client):
     assert restored.get_json()["deleted"] is False
 
 
+def test_note_must_be_trashed_before_permanent_delete(client):
+    created = client.post("/api/notes", json={"title": "Temporary"}).get_json()
+    note_id = created["id"]
+
+    blocked = client.delete(f"/api/notes/{note_id}")
+    assert blocked.status_code == 409
+
+    assert client.post(f"/api/notes/{note_id}/trash").status_code == 200
+    deleted = client.delete(f"/api/notes/{note_id}")
+    assert deleted.status_code == 200
+    assert client.get(f"/api/notes/{note_id}").status_code == 404
+
+
+def test_delete_notebook_moves_notes_to_inbox(client, app):
+    notebook = client.post("/api/notebooks", json={"name": "Old project"})
+    assert notebook.status_code == 201
+    notebook_id = notebook.get_json()["id"]
+    note = client.post("/api/notes", json={"title": "Keep me", "notebook_id": notebook_id})
+    note_id = note.get_json()["id"]
+
+    deleted = client.delete(f"/api/notebooks/{notebook_id}")
+    assert deleted.status_code == 200
+    assert deleted.get_json()["moved_notes"] == 1
+
+    moved = client.get(f"/api/notes/{note_id}").get_json()
+    assert moved["notebook"] == "Inbox"
+    assert moved["notebook_id"] == deleted.get_json()["inbox"]["id"]
+
+    with app.app_context():
+        assert Notebook.query.get(notebook_id) is None
+
+
+def test_inbox_notebook_cannot_be_deleted(client, app):
+    with app.app_context():
+        inbox_id = Notebook.query.filter_by(name="Inbox").first().id
+
+    response = client.delete(f"/api/notebooks/{inbox_id}")
+    assert response.status_code == 409
+    assert response.get_json()["error"] == "Inbox cannot be deleted."
+
+
 def test_markdown_render_is_sanitised(client):
     response = client.post(
         "/api/markdown/render",
