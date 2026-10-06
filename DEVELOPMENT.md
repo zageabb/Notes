@@ -40,6 +40,45 @@ Evidence:
 - Tests: not required for this documentation/process-only change.
 - User acceptance: requested 2026-10-02.
 
+### DEV-001 — Delete notes and notebooks safely
+Status: 🔨 IN PROGRESS
+Priority: High
+Owner/Agent: ChatGPT
+Branch: main
+Depends on: DEV-000
+Can run in parallel with: unrelated AI/search work
+Integration status: implemented on main; validation pending
+
+Requirement:
+- Allow notes that are no longer required to be permanently removed.
+- Allow notebooks that are no longer required to be removed without deleting the notes they contain.
+
+Implementation:
+- Permanent note deletion is exposed only for notes already in Trash; the existing API continues to reject direct deletion of active notes.
+- Notebook deletion reassigns contained notes to Inbox before removing the notebook.
+- Inbox is protected from deletion.
+- Notebook and permanent-note deletion both require explicit browser confirmation.
+
+Evidence:
+- Files: `notes_app/routes.py`, `templates/index.html`, `static/js/app.js`, `static/css/style.css`, `tests/test_app.py`
+- Tests: added API coverage for trash-before-delete, notebook reassignment, and Inbox protection.
+- CI: pending.
+- Merged to intended branch: implemented directly on `main`.
+- User/business acceptance: pending.
+
+Completion criteria:
+- [x] Implementation exists.
+- [x] Relevant files changed.
+- [x] Tests added/updated.
+- [ ] Relevant tests pass.
+- [ ] CI passes where applicable.
+- [x] Commit evidence exists on `main`.
+- [x] Integrated to intended branch.
+- [ ] External/user acceptance separated from development completion.
+
+Notes:
+- Notebook deletion is intentionally non-destructive: notes are moved to Inbox rather than cascade-deleted.
+
 ## Existing backlog/history
 
 Use the project-specific files listed above for historical and detailed backlog entries. New meaningful development should also receive a DEV entry here so status and evidence are visible consistently across repositories.
