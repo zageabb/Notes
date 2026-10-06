@@ -1,5 +1,13 @@
 # Release Notes
 
+## Unreleased
+
+### Added
+
+- permanent note deletion from Trash, with confirmation and existing trash-first protection.
+- notebook deletion controls; deleting a notebook moves its notes to Inbox rather than deleting them.
+- Inbox is protected from deletion.
+
 ## v2.0.1 — 22 September 2026
 
 ### Changed
