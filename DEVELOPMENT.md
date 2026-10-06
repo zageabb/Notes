@@ -41,13 +41,13 @@ Evidence:
 - User acceptance: requested 2026-10-02.
 
 ### DEV-001 — Delete notes and notebooks safely
-Status: 🔨 IN PROGRESS
+Status: ⏳ AWAITING ACCEPTANCE
 Priority: High
 Owner/Agent: ChatGPT
 Branch: main
 Depends on: DEV-000
 Can run in parallel with: unrelated AI/search work
-Integration status: implemented on main; validation pending
+Integration status: implemented and CI-verified on main
 
 Requirement:
 - Allow notes that are no longer required to be permanently removed.
@@ -62,7 +62,7 @@ Implementation:
 Evidence:
 - Files: `notes_app/routes.py`, `templates/index.html`, `static/js/app.js`, `static/css/style.css`, `tests/test_app.py`
 - Tests: added API coverage for trash-before-delete, notebook reassignment, and Inbox protection.
-- CI: pending.
+- CI: GitHub Actions `Notes tests` run 37485136788 — success.
 - Merged to intended branch: implemented directly on `main`.
 - User/business acceptance: pending.
 
@@ -70,8 +70,8 @@ Completion criteria:
 - [x] Implementation exists.
 - [x] Relevant files changed.
 - [x] Tests added/updated.
-- [ ] Relevant tests pass.
-- [ ] CI passes where applicable.
+- [x] Relevant tests pass.
+- [x] CI passes where applicable.
 - [x] Commit evidence exists on `main`.
 - [x] Integrated to intended branch.
 - [ ] External/user acceptance separated from development completion.
