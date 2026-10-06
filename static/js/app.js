@@ -58,6 +58,7 @@
     qs('#favouriteButton').textContent = note.favourite ? '★' : '☆';
     qs('#archiveButton').textContent = note.archived ? 'Unarchive' : 'Archive';
     qs('#trashButton').textContent = note.deleted ? 'Restore' : 'Trash';
+    qs('#deleteNoteButton').hidden = !note.deleted;
     renderAttachments();
     qsa('.note-list-item').forEach(el => el.classList.toggle('selected', Number(el.dataset.noteId) === note.id));
     if (state.preview) renderPreview();
@@ -290,6 +291,29 @@
     const noteButton = event.target.closest('[data-note-id]');
     if (noteButton) return selectNote(Number(noteButton.dataset.noteId));
 
+    const deleteNotebook = event.target.closest('[data-delete-notebook]');
+    if (deleteNotebook) {
+      const notebookId = Number(deleteNotebook.dataset.deleteNotebook);
+      const notebookName = deleteNotebook.dataset.notebookName || 'this notebook';
+      if (!confirm(`Delete notebook “${notebookName}”? Its notes will be moved to Inbox and will not be deleted.`)) return;
+      try {
+        const result = await api(`/api/notebooks/${notebookId}`, {method:'DELETE'});
+        deleteNotebook.closest('[data-notebook-row]')?.remove();
+        qs(`#notebookSelect option[value="${notebookId}"]`)?.remove();
+        if (String(state.notebook) === String(notebookId)) {
+          state.notebook = '';
+          qsa('.notebook-button').forEach(x => x.classList.remove('active'));
+          qs('.notebook-button[data-notebook=""]')?.classList.add('active');
+        }
+        if (state.noteId) await selectNote(state.noteId);
+        await refreshList();
+        setSaveState(result.moved_notes ? `Notebook deleted · ${result.moved_notes} note(s) moved to Inbox` : 'Notebook deleted');
+      } catch (err) {
+        setSaveState(`Delete failed: ${err.message}`);
+      }
+      return;
+    }
+
     const notebookButton = event.target.closest('.notebook-button');
     if (notebookButton) {
       qsa('.notebook-button').forEach(x => x.classList.remove('active'));
@@ -359,11 +383,25 @@
       method:'POST',
       body: JSON.stringify({name}),
     });
+    const row = document.createElement('div');
+    row.className = 'notebook-row';
+    row.dataset.notebookRow = notebook.id;
     const btn = document.createElement('button');
     btn.className = 'notebook-button';
     btn.dataset.notebook = notebook.id;
     btn.textContent = notebook.name;
-    qs('#notebookList').appendChild(btn);
+    row.appendChild(btn);
+    if ((notebook.name || '').toLowerCase() !== 'inbox') {
+      const remove = document.createElement('button');
+      remove.className = 'notebook-delete-button';
+      remove.dataset.deleteNotebook = notebook.id;
+      remove.dataset.notebookName = notebook.name;
+      remove.title = 'Delete notebook';
+      remove.setAttribute('aria-label', `Delete ${notebook.name}`);
+      remove.textContent = '×';
+      row.appendChild(remove);
+    }
+    qs('#notebookList').appendChild(row);
 
     const opt = document.createElement('option');
     opt.value = notebook.id;
@@ -415,6 +453,23 @@
       qs('#editorEmpty').hidden = false;
     }
     await refreshList();
+  });
+
+  qs('#deleteNoteButton').addEventListener('click', async () => {
+    if (!state.noteId || !state.note?.deleted) return;
+    if (!confirm('Permanently delete this note? This also removes its attachments and cannot be undone.')) return;
+    try {
+      await api(`/api/notes/${state.noteId}`, {method:'DELETE'});
+      state.note = null;
+      state.noteId = null;
+      qs('#editorContent').hidden = true;
+      qs('#editorEmpty').hidden = false;
+      qs('#deleteNoteButton').hidden = true;
+      await refreshList();
+      setSaveState('Note permanently deleted');
+    } catch (err) {
+      setSaveState(`Delete failed: ${err.message}`);
+    }
   });
 
   qs('#attachButton').addEventListener('click', () => state.noteId && qs('#attachmentInput').click());
