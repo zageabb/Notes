@@ -83,6 +83,15 @@ Notes:
 
 Use the project-specific files listed above for historical and detailed backlog entries. New meaningful development should also receive a DEV entry here so status and evidence are visible consistently across repositories.
 
+### OPS-UDA-001 — UDA subpath-compatible Notes
+Status: 🔨 IN PROGRESS
+Requirement: preserve LAN root use while serving under authenticated UDA `/apps/notes/`.
+Implementation: single trusted forwarded prefix in Flask; base-aware assets, API requests, attachment URLs and Markdown exports.
+Safety: UDA backend must be ingress-isolated; public proxy settings unchanged.
+Evidence: `tests/test_uda_subpath.py`, GitHub Actions `uda-tests.yml`; CI/merge and user testing pending.
+- [ ] CI green and merged to main.
+- [ ] Browser note editing, autosave, attachments, exports and auth verified through UDA.
+
 ## New item template
 
 ### DEV-XXX — Short title

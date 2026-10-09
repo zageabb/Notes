@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .models import db
 from .services import ensure_runtime_dirs, migrate_database
@@ -17,6 +18,8 @@ def create_app(test_config: dict | None = None) -> Flask:
         template_folder=str(root / "templates"),
         static_folder=str(root / "static"),
     )
+    # Only trust UDA's single controlled proxy hop; isolate backend ingress.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_prefix=1)
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     database_path = Path(app.instance_path) / "notes.db"
     app.config.update(

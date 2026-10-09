@@ -14,9 +14,10 @@
     saveTimer: null,
   };
 
+  const appUrl = (path) => new URL(path.replace(/^\/+/, ''), document.baseURI).toString();
   const api = async (url, options = {}) => {
     const headers = options.body instanceof FormData ? {} : {'Content-Type': 'application/json'};
-    const response = await fetch(url, {...options, headers: {...headers, ...(options.headers || {})}});
+    const response = await fetch(appUrl(url), {...options, headers: {...headers, ...(options.headers || {})}});
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || `${response.status} ${response.statusText}`);
     return data;
@@ -491,7 +492,7 @@
   });
 
   qs('#historyButton').addEventListener('click', openHistory);
-  qs('#exportButton').addEventListener('click', () => state.noteId && (window.location.href=`/export/note/${state.noteId}.md`));
+  qs('#exportButton').addEventListener('click', () => state.noteId && (window.location.href=appUrl(`/export/note/${state.noteId}.md`)));
   qs('#settingsButton').addEventListener('click', openSettings);
   qs('#ollamaServerPreset').addEventListener('change', async () => {
     const preset = qs('#ollamaServerPreset').value;
