@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Notes v{{ version }}{% endblock %}
 {% block content %}
+<header class="mobile-topbar"><button type="button" id="mobileBack" aria-label="Back to notes" hidden>‹</button><strong id="mobileHeading">Notes</strong><button type="button" id="mobileNew" aria-label="Create note">＋</button></header>
+<nav class="mobile-tabs" aria-label="Mobile navigation"><button type="button" data-mobile-tab="notes" class="active">☷<span>Notes</span></button><button type="button" data-mobile-tab="search">⌕<span>Search</span></button><button type="button" data-mobile-tab="editor">✎<span>Editor</span></button><button type="button" data-mobile-tab="ai">✦<span>AI</span></button></nav>
 <div class="app-shell" id="appShell" data-selected-id="{{ selected.id if selected else '' }}">
     <aside class="sidebar pane">
         <div class="brand-row">
