@@ -254,3 +254,19 @@ def test_all_notes_ai_search_can_match_attachment_text(app):
 
         matches = search_notes_for_ai("find my OpenText VIM information", limit=12)
         assert note.id in [row.id for row in matches]
+
+
+def test_mobile_pwa_shell_and_assets(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert b'data-mobile-tab="notes"' in page.data
+    assert b'data-mobile-tab="ai"' in page.data
+    assert b'manifest.webmanifest' in page.data
+    manifest = client.get("/static/manifest.webmanifest")
+    assert manifest.status_code == 200
+    assert b'"display": "standalone"' in manifest.data
+    assert client.get("/static/icons/notes.svg").status_code == 200
+    worker = client.get("/sw.js")
+    assert worker.status_code == 200
+    assert b"self.addEventListener" in worker.data
+    assert "javascript" in worker.content_type
