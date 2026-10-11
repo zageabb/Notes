@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_file
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_file, send_from_directory
 
 from .models import Attachment, Note, NoteRevision, Notebook, Tag, db
 from .services import (
@@ -49,6 +49,14 @@ def index():
         version=current_app.config["NOTES_VERSION"],
         skills=SKILLS,
     )
+
+
+@bp.get("/sw.js")
+def service_worker():
+    """Same-origin scoped worker; intentionally does not cache private notes."""
+    response = send_from_directory(current_app.static_folder, "sw.js", mimetype="application/javascript")
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @bp.get("/api/health")
