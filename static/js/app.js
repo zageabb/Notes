@@ -14,6 +14,29 @@
     saveTimer: null,
   };
 
+  const mobileQuery = window.matchMedia('(max-width: 767px)');
+  const setMobileScreen = (screen) => {
+    if (!['notes','search','editor','ai'].includes(screen)) return;
+    shell.dataset.mobileScreen = screen;
+    document.querySelectorAll('[data-mobile-tab]').forEach(button => {
+      const active = button.dataset.mobileTab === screen;
+      button.classList.toggle('active', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+    const headings = {notes:'Notes',search:'Search notes',editor:'Edit note',ai:'AI Assistant'};
+    qs('#mobileHeading').textContent = headings[screen];
+    qs('#mobileBack').hidden = screen === 'notes';
+    if (screen === 'search') qs('#searchInput').focus();
+  };
+  setMobileScreen('notes');
+  qsa('[data-mobile-tab]').forEach(button => button.addEventListener('click', () => setMobileScreen(button.dataset.mobileTab)));
+  qs('#mobileBack').addEventListener('click', () => setMobileScreen('notes'));
+  qs('#mobileNew').addEventListener('click', () => qs('#newNoteButton').click());
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register(new URL('sw.js', document.baseURI).toString()).catch(() => {});
+  }
+
   const appUrl = (path) => new URL(path.replace(/^\/+/, ''), document.baseURI).toString();
   const api = async (url, options = {}) => {
     const headers = options.body instanceof FormData ? {} : {'Content-Type': 'application/json'};
@@ -63,6 +86,7 @@
     renderAttachments();
     qsa('.note-list-item').forEach(el => el.classList.toggle('selected', Number(el.dataset.noteId) === note.id));
     if (state.preview) renderPreview();
+    if (mobileQuery.matches) setMobileScreen('editor');
   };
 
   const selectNote = async (id) => {
