@@ -122,7 +122,8 @@ Remaining:
 - [ ] Validate pytest and GitHub Actions CI green.
 - [ ] Verify Android install prompt over HTTPS and UDA subpath.
 - [ ] Check mobile editing, save, attachment uploads, navigation and AI on real device.
-- [ ] Consider PNG maskable icon for broader install compatibility.
+- [x] Added actual 192px and 512px PNG icons and referenced them in manifest (Android install compatibility).
+- [ ] Recheck Chrome installation after deployment; proxy/manifest/service-worker accessibility on deployed URL remains unverified.
 - [ ] User acceptance.
 
 ## New item template
