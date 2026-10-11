@@ -1,0 +1,19 @@
+{
+  "id": "../",
+  "name": "Notes",
+  "short_name": "Notes",
+  "description": "Local-first notes and knowledge workspace",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#11161d",
+  "theme_color": "#1f6feb",
+  "icons": [
+    {
+      "src": "icons/notes.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
