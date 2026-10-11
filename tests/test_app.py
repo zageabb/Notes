@@ -266,6 +266,10 @@ def test_mobile_pwa_shell_and_assets(client):
     assert manifest.status_code == 200
     assert b'"display": "standalone"' in manifest.data
     assert client.get("/static/icons/notes.svg").status_code == 200
+    for size in (192, 512):
+        icon = client.get(f"/static/icons/notes-{size}.png")
+        assert icon.status_code == 200
+        assert icon.data.startswith(b"\\x89PNG\\r\\n\\x1a\\n")
     worker = client.get("/sw.js")
     assert worker.status_code == 200
     assert b"self.addEventListener" in worker.data
