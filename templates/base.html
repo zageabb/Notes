@@ -4,6 +4,11 @@
     <base href="{{ url_for('notes.index') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1f6feb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Notes">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/notes.svg') }}">
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}Notes{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
