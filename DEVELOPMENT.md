@@ -92,6 +92,39 @@ Evidence: `tests/test_uda_subpath.py`, GitHub Actions `uda-tests.yml`; CI/merge 
 - [ ] CI green and merged to main.
 - [ ] Browser note editing, autosave, attachments, exports and auth verified through UDA.
 
+
+### DEV-002 — Mobile screens and installable PWA
+Status: ⏳ AWAITING ACCEPTANCE
+Priority: High
+Owner/Agent: ChatGPT
+Branch: main
+Integration status: implemented on main; CI and device acceptance still to verify
+
+Requirement:
+- Preserve the three-pane desktop workspace.
+- Provide phone-sized one-screen Notes/Search/Editor/AI navigation.
+- Support home-screen installation through HTTPS while reusing the existing database and APIs.
+- Avoid caching private notes or suggesting offline edits are available.
+
+Implementation:
+- Dedicated mobile header, four-tab navigation, and small-screen CSS screen modes.
+- Selecting or creating notes switches to the editor on narrow screens.
+- Web app manifest, SVG icon, and network-only service worker, scoped to the application root (including UDA subpaths).
+- Existing desktop layout and note routes remain in place.
+
+Evidence:
+- Files: templates/index.html, templates/base.html, static/css/style.css, static/js/app.js, static/manifest.webmanifest, static/icons/notes.svg, static/sw.js, notes_app/routes.py, tests/test_app.py.
+- Tests: added test_mobile_pwa_shell_and_assets; CI status to verify.
+- Merged to intended branch: commits directly on main.
+- User/business acceptance: pending mobile device/HTTPS test.
+
+Remaining:
+- [ ] Validate pytest and GitHub Actions CI green.
+- [ ] Verify Android install prompt over HTTPS and UDA subpath.
+- [ ] Check mobile editing, save, attachment uploads, navigation and AI on real device.
+- [ ] Consider PNG maskable icon for broader install compatibility.
+- [ ] User acceptance.
+
 ## New item template
 
 ### DEV-XXX — Short title
